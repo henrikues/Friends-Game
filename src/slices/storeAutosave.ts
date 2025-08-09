@@ -1,10 +1,15 @@
-export const loadState = () => {
+export const loadState = (sliceName: string) => {
     try {
       const serialState = localStorage.getItem('appState');
       if (serialState === null) {
         return undefined;
       }
-      return JSON.parse(serialState);
+      let retData = JSON.parse(serialState);
+      if (retData[sliceName]){
+        return retData[sliceName];
+      }else {
+        return {};
+      }
     } catch (err) {
       return undefined;
     }

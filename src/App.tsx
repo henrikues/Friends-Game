@@ -1,28 +1,37 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import store from './slices/store';
-import {Host} from './components/Host';
-import {Player} from './components/Player';
-import {Home} from './components/Home';
+import { Host } from './components/Host';
+import { Player } from './components/Player';
+import { Home } from './components/Home';
 import { saveState } from './slices/storeAutosave';
+import { Container, createTheme, MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css';
 
 //Autosaves State
 store.subscribe(() => {
   saveState(store.getState());
 });
 
+const theme = createTheme({
+  /** Put your mantine theme override here */
+});
 
 function App() {
   return (
-    <Provider store={store}>
-      <Router basename={import.meta.env.BASE_URL}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/host" element={<Host />} />
-          <Route path="/player" element={<Player />} />
-        </Routes>
-      </Router>
-    </Provider>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
+      <Provider store={store}>
+        <Container fluid style={{ textAlign: 'center', padding: '20px' }}>
+          <Router basename={import.meta.env.BASE_URL}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/host" element={<Host />} />
+              <Route path="/player" element={<Player />} />
+            </Routes>
+          </Router>
+        </Container>
+      </Provider>
+    </MantineProvider>
   );
 }
 
