@@ -57,6 +57,9 @@ const hostSlice = createSlice({
     addMessage (state, action) {
       const message = action.payload;
       state.messages.push(message);
+    },
+    removeMessage (state) {
+      state.messages.shift();
     }
   },
 });
@@ -73,4 +76,5 @@ export const {
   , addPlayer
   , setJoinUrl
   , addMessage
+  , removeMessage
 } = hostSlice.actions;

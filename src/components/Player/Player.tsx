@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { resetPlayer, selectPlayerData, setHost, setMyAvatar, setMyId, setMyName } from "../../slices/playerSlice";
 import { Title, Text, TextInput, Container, Avatar, Select, SimpleGrid, Divider, Button } from "@mantine/core";
 import Peer from "peerjs";
+import { useNavigate } from "react-router-dom";
 
 const avatarOptions = [ //will replace these with pictures in the future, or allow users to upload own pictures
     { value: 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-7.png', label: 'Avatar 7' },
@@ -17,6 +18,7 @@ const avatarOptions = [ //will replace these with pictures in the future, or all
 export function Player(props: any) {
     const { peerRef, connectionsRef } = props;
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const playerData = useSelector(selectPlayerData);
 
     const [showAvatarGrid, setShowAvatarGrid] = useState(false);
@@ -62,6 +64,7 @@ export function Player(props: any) {
                 }
             )
         }
+        navigate('/playerGame');
     }
 
 

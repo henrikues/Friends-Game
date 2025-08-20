@@ -9,6 +9,7 @@ import { Container, createTheme, MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import Game from './components/Host/Game';
 import { useRef } from 'react';
+import PlayerControls from './components/Player/PlayerControls';
 
 
 //Autosaves State
@@ -23,6 +24,7 @@ const theme = createTheme({
 function App() {
   let peerRef = useRef(null);
   let connectionsRef = useRef({});
+  let canvasRef = useRef(null);
 
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
@@ -33,7 +35,9 @@ function App() {
               <Route path="/" element={<Home/>} />
               <Route path="/host" element={<Host peerRef={peerRef} connectionsRef={connectionsRef}/> } />
               <Route path="/player" element={<Player peerRef={peerRef} connectionsRef={connectionsRef}/>} />
-              <Route path="/game" element={<Game peerRef={peerRef} connectionsRef={connectionsRef}/>} />
+              <Route path="/game" element={<Game peerRef={peerRef} connectionsRef={connectionsRef} canvasRef={canvasRef} />} />
+              <Route path="/playerGame" element={<PlayerControls peerRef={peerRef} connectionsRef={connectionsRef}/>} />
+              <Route path="*" element={<div>404 Not Found</div>} />
             </Routes>
           </Router>
         </Container>
