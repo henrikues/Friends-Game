@@ -1,11 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { loadState } from './storeAutosave';
-import { setHostId } from './hostSlice';
+
 
 const initialState = {
   myId: null,
   hostId: null,
-  myName: null,
+  myName: "",
   myScore: 0,
   myAvatar: null //just the URL
 };
@@ -18,7 +18,7 @@ const playerSlice = createSlice({
       state.hostId = action.payload;
     },
     setMyId(state, action) {
-      state.myId = action.payload;
+      state.myId = action.payload; 
     },
     setMyName(state, action) {
       state.myName = action.payload;
@@ -29,6 +29,9 @@ const playerSlice = createSlice({
     setMyAvatar(state, action) {
       state.myAvatar = action.payload;
     },
+    resetPlayer() {
+      return initialState;
+    }
   },
 });
 
@@ -39,6 +42,7 @@ export const {
   , setMyName
   , setMyScore
   , setMyAvatar
+  , resetPlayer
 } = playerSlice.actions;
 
 export const selectPlayerData = (state: any) => state.player;

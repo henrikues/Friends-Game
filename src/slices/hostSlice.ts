@@ -13,7 +13,8 @@ const initialState = {
     },
     joinUrl: null
   },
-  players: {}
+  players: {},
+  messages: []
 };
 
 
@@ -44,7 +45,7 @@ const hostSlice = createSlice({
       if (!(player.peer in state.players)) {
         state.players[player.peer] = {};
       }
-      state.players[player.peer].conn = player;
+      //state.players[player.peer].conn = player; //Cannot do that, connection object doesn't de-serialize
       state.players[player.peer].name = player.label;
     },
     setHostId (state, action) {
@@ -52,6 +53,10 @@ const hostSlice = createSlice({
     },
     setJoinUrl (state, action) {
       state.hostInfo.joinUrl = action.payload;
+    },
+    addMessage (state, action) {
+      const message = action.payload;
+      state.messages.push(message);
     }
   },
 });
@@ -67,4 +72,5 @@ export const {
   , resetHost
   , addPlayer
   , setJoinUrl
+  , addMessage
 } = hostSlice.actions;

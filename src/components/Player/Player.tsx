@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectPlayerData, setHost, setMyAvatar, setMyId, setMyName } from "../slices/playerSlice";
+import { resetPlayer, selectPlayerData, setHost, setMyAvatar, setMyId, setMyName } from "../../slices/playerSlice";
 import { Title, Text, TextInput, Container, Avatar, Select, SimpleGrid, Divider, Button } from "@mantine/core";
 import Peer from "peerjs";
 
@@ -14,8 +14,8 @@ const avatarOptions = [ //will replace these with pictures in the future, or all
     { value: 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-1.png', label: 'Avatar 1' },
 ];
 
-export function Player() {
-
+export function Player(props: any) {
+    const { peerRef, connectionsRef } = props;
     const dispatch = useDispatch();
     const playerData = useSelector(selectPlayerData);
 
@@ -29,13 +29,37 @@ export function Player() {
     }, []);
 
     function joinGame() {
-        let playerId = "FriendsGame-Player-" + playerData.myName + "-" + Math.random().toString(36).substring(2, 10);
-        const peer = new Peer();
-        peer.on('open', function(id) {
-            dispatch(setMyId(id));
-            peer.connect(playerData.hostId, { label: playerData.myName });
-        });
-        
+        if (!peerRef.current){
+            const peer = new Peer();
+            peerRef.current = peer;
+            peer.on('open', function(id) {
+                dispatch(setMyId(id));
+                const conn = peer.connect(playerData.hostId, { label: playerData.myName });
+                connectionsRef.current.Host = conn;
+                conn.on('data', (data: any) => {
+                    if (data.type === 'message') {
+                        alert(`Message from host: ${data.content}`);
+                    } else if (data.type === 'reconnect') {
+                        alert(`Host is trying to reconnect: ${data.content}`);    
+                    } else if (data.type === 'disconnect') {
+                        alert(`Host has disconnected: ${data.content}`);
+                        connectionsRef.current.Host.close();
+                        connectionsRef.current.Host = null;
+                    }
+                });
+
+                
+            });
+        } else {
+            connectionsRef.current.Host.send(
+                {
+                    type: 'reconnect',
+                    content: "I'm trying to reconnect!",
+                    from: playerData.myName,
+                    id: playerData.myId
+                }
+            )
+        }
     }
 
 
@@ -70,8 +94,20 @@ export function Player() {
             {playerData.myName && (
                 <>
                     <Divider my="xs" label="Join the game" labelPosition="center" />
-                    <Button onClick={joinGame}>Join Game</Button>
+                    <Button onClick={joinGame} style={{marginRight: "15px"}}>Join Game</Button>
+                    <Button onClick={() => dispatch(resetPlayer())} color="red">Reset Player</Button>
                 </>
+            )}
+
+            {playerData.myId && (
+                <TextInput
+                    label="Send a message to the host"
+                    onBlur={(event) => {
+                        if (connectionsRef.current.Host) {
+                            connectionsRef.current.Host.send(event.target.value);
+                        }
+                    }}
+                />
             )}
         </>
     )

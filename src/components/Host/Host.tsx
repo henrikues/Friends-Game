@@ -1,23 +1,19 @@
 import { Title, Text, SegmentedControl, Divider, Container, Button, TextInput, Stack } from "@mantine/core";
 import QRCode from "react-qr-code";
 import { useDispatch, useSelector } from "react-redux";
-import { addPlayer, resetHost, selectHostData, selectPrivateServerData, setHostId, setJoinUrl, setPrivateServer, setServerType } from "../slices/hostSlice";
+import { addMessage, addPlayer, resetHost, selectHostData, selectPrivateServerData, setHostId, setJoinUrl, setPrivateServer, setServerType } from "../../slices/hostSlice";
 import Peer from "peerjs";
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-export function Host() {
+export function Host(props: any) {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const hostData = useSelector(selectHostData);
     const privateServerData = useSelector(selectPrivateServerData);
+    const { peerRef, connectionsRef } = props;
 
-    useEffect(() => {
-        if (hostData.hostInfo.hostId) {
-            //registerHost();
-        }
-    }, []);
 
-    function registerHost () {
+    function registerHost() {
         const serverType = hostData.hostInfo.serverType;
         let peer;
 
@@ -31,32 +27,48 @@ export function Host() {
         } else {
             peer = new Peer();
         }
-        peer.on('open', function(id) {
+        peerRef.current = peer;
+
+        //When we get a connection to the brokering server
+        peer.on('open', function (id) {
             dispatch(setHostId(id));
             const url = new URL(window.location.href.replace("/host", "/player"));
             url.searchParams.set('hostId', id)
             dispatch(setJoinUrl(url.toString()));
         });
-        
 
+        //When we get a connection from another player
         peer.on('connection', (conn) => {
-            dispatch(addPlayer(conn))
-            conn.on('data', processDataHost);
-            conn.on('open', () => welcomeNewPlayer(conn.peer));
-            conn.on('close', () => informPlayerDisconnected(conn.peer));
+            dispatch(addPlayer({ peer: conn.peer, label: conn.label}));
+            onOpen(conn.label);
+            connectionsRef.current[conn.peer] = conn;
+            conn.on('data', onData);
+            conn.on('open', () => onOpen(conn.peer));
+            conn.on('close', () => onClose(conn.peer));
         })
-        
     }
 
-    function processDataHost (data: unknown) {
-        return data;
+    function onData(data: unknown) {
+        dispatch(addMessage(JSON.stringify(data)));
     }
-    function welcomeNewPlayer(playerId: string) {
+    function onOpen(playerId: string) {
+        broadcastMessage(`Welcome ${playerId} to the game!`);
         return;
     }
 
-    function informPlayerDisconnected(playerId: string) {
+    function onClose(playerId: string) {
+        alert(`Goodbye ${playerId}`);
         return;
+    }
+
+    function broadcastMessage(message: string) {
+        const conns = connectionsRef.current;
+        Object.keys(conns).map((key: string) => 
+            conns[key].send({
+                type: 'message',
+                content: message,
+            })
+        );
     }
 
     return (
@@ -68,17 +80,17 @@ export function Host() {
 
             <Divider my="xs" label="Setup your browser as the Host" labelPosition="center" />
             <Stack align="center">
-                <SegmentedControl 
-                    data={['Public Server', 'Private Server']} 
+                <SegmentedControl
+                    data={['Public Server', 'Private Server']}
                     value={hostData.hostInfo.serverType}
                     onChange={(value) => dispatch(setServerType(value))}
                 />
                 {
                     hostData.hostInfo.serverType === 'Private Server' && (
                         <Container style={{ maxWidth: '400px', margin: 'auto', padding: '16px' }}>
-                            <TextInput label="Server Name" placeholder="localhost" onChange={(event) => dispatch(setPrivateServer({ name: event.target.value }))} value={privateServerData.name}/>
-                            <TextInput label="Port" placeholder="9000" onChange={(event) => dispatch(setPrivateServer({ port: event.target.value }))} value={privateServerData.port}/>
-                            <TextInput label="Path" placeholder="/peerServer" onChange={(event) => dispatch(setPrivateServer({ path: event.target.value}))} value={privateServerData.path} />
+                            <TextInput label="Server Name" placeholder="localhost" onChange={(event) => dispatch(setPrivateServer({ name: event.target.value }))} value={privateServerData.name} />
+                            <TextInput label="Port" placeholder="9000" onChange={(event) => dispatch(setPrivateServer({ port: event.target.value }))} value={privateServerData.port} />
+                            <TextInput label="Path" placeholder="/peerServer" onChange={(event) => dispatch(setPrivateServer({ path: event.target.value }))} value={privateServerData.path} />
                         </Container>
                     )
                 }
@@ -101,17 +113,18 @@ export function Host() {
             {Object.keys(hostData.players).length === 0 ? (
                 <Text>No players connected yet...</Text>
             )
-            : (
-                <Stack align="center">
-                    {Object.keys(hostData.players).map((playerId) => (
-                        <Text key={playerId}>{hostData.players[playerId].name || playerId}</Text>
-                    ))}
-                </Stack>
-            )}
+                : (
+                    <Stack align="center">
+                        {Object.keys(hostData.players).map((playerId) => (
+                            <Text key={playerId}>{hostData.players[playerId].name + " - " + playerId}</Text>
+                        ))}
+                    </Stack>
+                )}
 
             <Divider my="xs" label="Danger Area" labelPosition="center" />
-            <Button style={{marginRight: "15px"}}>Start Game</Button>
+            <Button onClick={() => navigate('/game')} style={{ marginRight: "15px" }}>Start Game</Button>
             <Button onClick={() => dispatch(resetHost())} color="red">Reset Host</Button>
+            <Button onClick={() => broadcastMessage("Hello!")} color="red">Broadcast</Button>
         </>
     );
 
