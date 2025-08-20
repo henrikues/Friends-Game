@@ -30,12 +30,14 @@ export function Player(props: any) {
 
     function joinGame() {
         if (!peerRef.current){
+            
             const peer = new Peer();
             peerRef.current = peer;
             peer.on('open', function(id) {
                 dispatch(setMyId(id));
                 const conn = peer.connect(playerData.hostId, { label: playerData.myName });
-                connectionsRef.current.Host = conn;
+                connectionsRef.current = {Host : conn};
+                
                 conn.on('data', (data: any) => {
                     if (data.type === 'message') {
                         alert(`Message from host: ${data.content}`);
@@ -103,6 +105,7 @@ export function Player(props: any) {
                 <TextInput
                     label="Send a message to the host"
                     onBlur={(event) => {
+                        console.log(connectionsRef.current.Host.peer)
                         if (connectionsRef.current.Host) {
                             connectionsRef.current.Host.send(event.target.value);
                         }
