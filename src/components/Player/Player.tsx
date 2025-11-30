@@ -4,6 +4,7 @@ import { resetPlayer, selectPlayerData, setHost, setMyAvatar, setMyId, setMyName
 import { Title, Text, TextInput, Container, Avatar, Select, SimpleGrid, Divider, Button } from "@mantine/core";
 import Peer from "peerjs";
 import { useNavigate } from "react-router-dom";
+import { joinGame as joinGameFromConnectionTools } from "../../helpers/connectionTools";
 
 const avatarOptions = [ //will replace these with pictures in the future, or allow users to upload own pictures
     { value: 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-7.png', label: 'Avatar 7' },
@@ -31,39 +32,7 @@ export function Player(props: any) {
     }, []);
 
     function joinGame() {
-        if (!peerRef.current){
-            
-            const peer = new Peer();
-            peerRef.current = peer;
-            peer.on('open', function(id) {
-                dispatch(setMyId(id));
-                const conn = peer.connect(playerData.hostId, { label: playerData.myName });
-                connectionsRef.current = {Host : conn};
-                
-                conn.on('data', (data: any) => {
-                    if (data.type === 'message') {
-                        alert(`Message from host: ${data.content}`);
-                    } else if (data.type === 'reconnect') {
-                        alert(`Host is trying to reconnect: ${data.content}`);    
-                    } else if (data.type === 'disconnect') {
-                        alert(`Host has disconnected: ${data.content}`);
-                        connectionsRef.current.Host.close();
-                        connectionsRef.current.Host = null;
-                    }
-                });
-
-                
-            });
-        } else {
-            connectionsRef.current.Host.send(
-                {
-                    type: 'reconnect',
-                    content: "I'm trying to reconnect!",
-                    from: playerData.myName,
-                    id: playerData.myId
-                }
-            )
-        }
+        joinGameFromConnectionTools(dispatch, peerRef, connectionsRef, playerData);
         navigate('/playerGame');
     }
 
@@ -76,7 +45,7 @@ export function Player(props: any) {
             </Title>
             <Divider my="xs" label="Player Info" labelPosition="center" />
             <Container style={{ maxWidth: '400px', margin: 'auto', padding: '16px' }}>
-                <TextInput label="What's your name?" placeholder="Player Name" value={playerData.myName} onChange={(event) => dispatch(setMyName(event.target.value))}/>
+                <TextInput label="What's your name?" placeholder="Player Name" value={playerData.myName} onChange={(event) => dispatch(setMyName(event.target.value))} />
 
                 <Text>Choose your Avatar:</Text>
                 {showAvatarGrid ? (
@@ -84,22 +53,22 @@ export function Player(props: any) {
                         {avatarOptions.map((option) => (
                             <Avatar
                                 key={option.value}
-                                src={option.value}  
+                                src={option.value}
                                 radius="xl" size="xl"
                                 onClick={() => {
                                     dispatch(setMyAvatar(option.value));
-                                    setShowAvatarGrid(false);       
+                                    setShowAvatarGrid(false);
                                 }}
                             />
                         ))}
                     </SimpleGrid>
                 )
-                : <Avatar radius="xl" size="xl" src={playerData.myAvatar} style={{margin: '0 auto' }} onClick={() => setShowAvatarGrid(!showAvatarGrid)}/>}
+                    : <Avatar radius="xl" size="xl" src={playerData.myAvatar} style={{ margin: '0 auto' }} onClick={() => setShowAvatarGrid(!showAvatarGrid)} />}
             </Container>
             {playerData.myName && (
                 <>
                     <Divider my="xs" label="Join the game" labelPosition="center" />
-                    <Button onClick={joinGame} style={{marginRight: "15px"}}>Join Game</Button>
+                    <Button onClick={joinGame} style={{ marginRight: "15px" }}>Join Game</Button>
                     <Button onClick={() => dispatch(resetPlayer())} color="red">Reset Player</Button>
                 </>
             )}

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addMessage, addPlayer, resetHost, selectHostData, selectPrivateServerData, setHostId, setJoinUrl, setPrivateServer, setServerType } from "../../slices/hostSlice";
 import Peer from "peerjs";
 import { Link, useNavigate } from "react-router-dom";
+import { registerHost } from "../../helpers/connectionTools";
 
 export function Host(props: any) {
     const dispatch = useDispatch();
@@ -11,42 +12,6 @@ export function Host(props: any) {
     const hostData = useSelector(selectHostData);
     const privateServerData = useSelector(selectPrivateServerData);
     const { peerRef, connectionsRef } = props;
-
-
-    function registerHost() {
-        const serverType = hostData.hostInfo.serverType;
-        let peer;
-
-        if (serverType === 'Private Server') {
-            const { name, port, path } = privateServerData;
-            peer = new Peer("", {
-                host: name,
-                port: port,
-                path: path,
-            });
-        } else {
-            peer = new Peer();
-        }
-        peerRef.current = peer;
-
-        //When we get a connection to the brokering server
-        peer.on('open', function (id) {
-            dispatch(setHostId(id));
-            const url = new URL(window.location.href.replace("/host", "/player"));
-            url.searchParams.set('hostId', id)
-            dispatch(setJoinUrl(url.toString()));
-        });
-
-        //When we get a connection from another player
-        peer.on('connection', (conn) => {
-            dispatch(addPlayer({ peer: conn.peer, label: conn.label}));
-            onOpen(conn.label);
-            connectionsRef.current[conn.peer] = conn;
-            conn.on('data', onData);
-            conn.on('open', () => onOpen(conn.peer));
-            conn.on('close', () => onClose(conn.peer));
-        })
-    }
 
     function onData(data: unknown) {
         dispatch(addMessage(JSON.stringify(data)));
@@ -63,7 +28,7 @@ export function Host(props: any) {
 
     function broadcastMessage(message: string) {
         const conns = connectionsRef.current;
-        Object.keys(conns).map((key: string) => 
+        Object.keys(conns).map((key: string) =>
             conns[key].send({
                 type: 'message',
                 content: message,
@@ -94,7 +59,20 @@ export function Host(props: any) {
                         </Container>
                     )
                 }
-                <Button onClick={registerHost}>Register Host</Button>
+                <Button onClick={
+                    () => registerHost(
+                        hostData
+                        , peerRef
+                        , connectionsRef
+                        , onOpen
+                        , onClose
+                        , onData
+                        , dispatch
+                        , privateServerData
+                    )}
+                >
+                        Register Host
+                </Button>
             </Stack>
 
             {hostData.hostInfo.joinUrl && (
